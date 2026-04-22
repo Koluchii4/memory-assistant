@@ -112,7 +112,52 @@
     </div>
 
   </section>
-  <section id="page-add"      class="page">Add Memory</section>
+  <section id="page-add" class="page">
+
+    <div class="page-title">✦ New Memory</div>
+
+    <!-- Mood selector -->
+    <div class="form-group">
+      <label class="form-label">How are you feeling?</label>
+      <div class="mood-grid" id="mood-grid">
+        <button class="mood-btn" data-mood="😊"><span class="emoji">😊</span><span class="mood-label">Happy</span></button>
+        <button class="mood-btn" data-mood="😢"><span class="emoji">😢</span><span class="mood-label">Sad</span></button>
+        <button class="mood-btn" data-mood="😤"><span class="emoji">😤</span><span class="mood-label">Angry</span></button>
+        <button class="mood-btn" data-mood="😴"><span class="emoji">😴</span><span class="mood-label">Tired</span></button>
+        <button class="mood-btn" data-mood="🤩"><span class="emoji">🤩</span><span class="mood-label">Excited</span></button>
+        <button class="mood-btn" data-mood="😌"><span class="emoji">😌</span><span class="mood-label">Calm</span></button>
+        <button class="mood-btn" data-mood="🥺"><span class="emoji">🥺</span><span class="mood-label">Grateful</span></button>
+        <button class="mood-btn" data-mood="😰"><span class="emoji">😰</span><span class="mood-label">Anxious</span></button>
+        <button class="mood-btn" data-mood="🤔"><span class="emoji">🤔</span><span class="mood-label">Curious</span></button>
+        <button class="mood-btn" data-mood="💪"><span class="emoji">💪</span><span class="mood-label">Strong</span></button>
+      </div>
+    </div>
+
+    <!-- Memory text -->
+    <div class="form-group">
+      <label class="form-label" for="mem-text">What happened?</label>
+      <textarea class="field" id="mem-text" rows="5"
+        placeholder="Tell me about this moment… what did you see, feel, hear?"></textarea>
+    </div>
+
+    <!-- Tags -->
+    <div class="form-group">
+      <label class="form-label">Tags</label>
+      <div class="tags-input" id="tags-wrap">
+        <input class="tag-field" id="tag-input" placeholder="Type a tag and press Enter…">
+      </div>
+    </div>
+
+    <!-- YouTube link -->
+    <div class="form-group">
+      <label class="form-label" for="yt-link">YouTube Link (optional)</label>
+      <input type="url" class="field" id="yt-link" placeholder="https://youtube.com/watch?v=…">
+      <div id="yt-preview"></div>
+    </div>
+
+    <button class="submit-btn" id="btn-save">✦ Save Memory &nbsp;+10 ⭐</button>
+
+  </section>
   <section id="page-search"   class="page">Search</section>
   <section id="page-timeline" class="page">Timeline</section>
   <section id="page-games"    class="page">Brain Games</section>
