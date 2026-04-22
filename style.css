@@ -1,0 +1,124 @@
+/* ============================
+   RESET & VARIABLES
+============================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --sky:       #87CEEB;
+  --green:     #2ecc71;
+  --red:       #e74c3c;
+  --navy:      #1a1a2e;
+  --navy-mid:  #16213e;
+  --navy-deep: #0f3460;
+  --text:      #f0f4ff;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================
+   NEURAL BACKGROUND
+============================ */
+.neural-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(135,206,235,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 90%, rgba(46,204,113,0.06) 0%, transparent 60%),
+    linear-gradient(160deg, #0d1117 0%, #1a1a2e 40%, #0f3460 100%);
+}
+
+/* Pulsing dot layer */
+.neural-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle 2px at 15% 20%, rgba(135,206,235,0.7) 0%, transparent 100%),
+    radial-gradient(circle 2px at 55% 15%, rgba(135,206,235,0.6) 0%, transparent 100%),
+    radial-gradient(circle 2px at 90% 25%, rgba(135,206,235,0.7) 0%, transparent 100%),
+    radial-gradient(circle 2px at 45% 85%, rgba(135,206,235,0.6) 0%, transparent 100%),
+    radial-gradient(circle 2px at 25% 40%, rgba(135,206,235,0.5) 0%, transparent 100%),
+    radial-gradient(circle 2px at 80% 65%, rgba(46,204,113,0.5) 0%, transparent 100%),
+    radial-gradient(circle 2px at 10% 70%, rgba(135,206,235,0.5) 0%, transparent 100%);
+  animation: neuralPulse 6s ease-in-out infinite alternate;
+}
+
+.neural-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle 2px at 70% 10%, rgba(135,206,235,0.5) 0%, transparent 100%),
+    radial-gradient(circle 2px at 35% 60%, rgba(135,206,235,0.5) 0%, transparent 100%),
+    radial-gradient(circle 2px at 60% 55%, rgba(135,206,235,0.6) 0%, transparent 100%),
+    radial-gradient(circle 2px at 85% 80%, rgba(46,204,113,0.4) 0%, transparent 100%);
+  animation: neuralPulse 8s ease-in-out infinite alternate-reverse;
+  animation-delay: -3s;
+}
+
+@keyframes neuralPulse {
+  0%   { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Floating nodes */
+.node {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--sky);
+  box-shadow: 0 0 8px var(--sky), 0 0 20px rgba(135,206,235,0.4);
+  animation: nodeFloat var(--d, 8s) ease-in-out infinite alternate;
+}
+
+.node:nth-child(1)  { width:4px; height:4px; top:12%; left:8%;  --d:7s;  animation-delay:-1s; }
+.node:nth-child(2)  { width:3px; height:3px; top:28%; left:22%; --d:9s;  animation-delay:-3s; }
+.node:nth-child(3)  { width:5px; height:5px; top:8%;  left:45%; --d:6s;  animation-delay:-2s; }
+.node:nth-child(4)  { width:3px; height:3px; top:42%; left:68%; --d:11s; animation-delay:-5s; }
+.node:nth-child(5)  { width:4px; height:4px; top:18%; left:82%; --d:8s;  animation-delay:-4s; }
+.node:nth-child(6)  { width:3px; height:3px; top:65%; left:15%; --d:10s; animation-delay:-1s;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green), 0 0 20px rgba(46,204,113,0.4);
+}
+.node:nth-child(7)  { width:4px; height:4px; top:75%; left:38%; --d:7s;  animation-delay:-6s; }
+.node:nth-child(8)  { width:3px; height:3px; top:55%; left:58%; --d:9s;  animation-delay:-2s; }
+.node:nth-child(9)  { width:5px; height:5px; top:85%; left:75%; --d:6s;  animation-delay:-3s;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green), 0 0 20px rgba(46,204,113,0.4);
+}
+.node:nth-child(10) { width:3px; height:3px; top:35%; left:92%; --d:12s; animation-delay:-7s; }
+.node:nth-child(11) { width:4px; height:4px; top:92%; left:5%;  --d:8s;  animation-delay:-4s; }
+.node:nth-child(12) { width:3px; height:3px; top:48%; left:30%; --d:10s; animation-delay:-5s; }
+
+@keyframes nodeFloat {
+  0%   { transform: translate(0, 0)     scale(1);   opacity: 0.5; }
+  50%  { transform: translate(8px, -6px) scale(1.2); opacity: 1;   }
+  100% { transform: translate(-4px, 8px) scale(0.9); opacity: 0.6; }
+}
+
+/* ============================
+   APP CONTAINER
+============================ */
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
