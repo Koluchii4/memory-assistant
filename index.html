@@ -22,7 +22,96 @@
     <div class="credits-pill">⭐ <span id="credits-display">0</span></div>
   </header>
 
-  <section id="page-home"     class="page active">Home</section>
+  <section id="page-home" class="page active">
+
+    <!-- Masya's stage -->
+    <div class="masya-stage" id="masya-stage">
+      <svg id="masya" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Tail -->
+        <g class="masya-tail">
+          <ellipse cx="63" cy="54" rx="14" ry="8" fill="#9aa0b0" transform="rotate(-18 63 54)"/>
+          <ellipse cx="63" cy="54" rx="9"  ry="5" fill="#b8bec8" transform="rotate(-18 63 54)"/>
+        </g>
+        <!-- Body -->
+        <ellipse cx="40" cy="52" rx="22" ry="17" fill="#ededed"/>
+        <ellipse cx="34" cy="56" rx="7"  ry="4.5" fill="rgba(155,160,175,0.4)"/>
+        <ellipse cx="50" cy="47" rx="5.5" ry="3.5" fill="rgba(155,160,175,0.3)"/>
+        <!-- Back legs -->
+        <ellipse class="leg-bl" cx="47" cy="66" rx="6" ry="3"   fill="#d4d4d4"/>
+        <ellipse class="leg-br" cx="55" cy="66" rx="5" ry="2.5" fill="#c8c8c8"/>
+        <!-- Head group -->
+        <g class="masya-head">
+          <!-- Ears -->
+          <ellipse cx="11" cy="25" rx="6.5" ry="9"   fill="#9aa0b0"/>
+          <ellipse class="ear-r" cx="28" cy="24" rx="6" ry="8.5" fill="#9aa0b0"/>
+          <ellipse cx="11" cy="25" rx="3.5" ry="6"   fill="#f2b8c6"/>
+          <ellipse class="ear-r" cx="28" cy="24" rx="3" ry="5.5" fill="#f2b8c6"/>
+          <!-- Head -->
+          <ellipse cx="20" cy="38" rx="15" ry="14" fill="#ededed"/>
+          <!-- Eyes -->
+          <circle cx="14" cy="36" r="4.5" fill="#1a7abf"/>
+          <circle cx="26" cy="36" r="4.5" fill="#1a7abf"/>
+          <circle cx="14" cy="36" r="3"   fill="#0c4b80"/>
+          <circle cx="26" cy="36" r="3"   fill="#0c4b80"/>
+          <circle cx="15.2" cy="34.8" r="1.2" fill="white"/>
+          <circle cx="27.2" cy="34.8" r="1.2" fill="white"/>
+          <!-- Cheeks -->
+          <ellipse cx="9"  cy="40" rx="4.5" ry="3" fill="rgba(244,160,160,0.35)"/>
+          <ellipse cx="31" cy="40" rx="4.5" ry="3" fill="rgba(244,160,160,0.35)"/>
+          <!-- Nose + mouth -->
+          <ellipse cx="20" cy="42" rx="2" ry="1.4" fill="#f4a0a0"/>
+          <path d="M17.5 43.8 Q20 45.5 22.5 43.8" stroke="#d08080" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+          <!-- Whiskers -->
+          <line x1="4"  y1="40" x2="16" y2="42" stroke="#bbb" stroke-width="0.75" stroke-linecap="round"/>
+          <line x1="4"  y1="43" x2="16" y2="43" stroke="#bbb" stroke-width="0.75" stroke-linecap="round"/>
+          <line x1="24" y1="42" x2="36" y2="40" stroke="#bbb" stroke-width="0.75" stroke-linecap="round"/>
+          <line x1="24" y1="43" x2="36" y2="43" stroke="#bbb" stroke-width="0.75" stroke-linecap="round"/>
+        </g>
+        <!-- Front legs -->
+        <ellipse class="leg-fl" cx="24" cy="65" rx="5.5" ry="3"   fill="#d4d4d4"/>
+        <ellipse class="leg-fr" cx="32" cy="65" rx="4.5" ry="2.5" fill="#c8c8c8"/>
+      </svg>
+    </div>
+
+    <!-- Tamagotchi stats -->
+    <div class="masya-stats">
+      <div class="stat-card">
+        <div class="stat-label">😊 Mood</div>
+        <div class="stat-track"><div class="stat-fill mood" id="s-mood" style="width:80%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">🌿 Hunger</div>
+        <div class="stat-track"><div class="stat-fill hunger" id="s-hunger" style="width:60%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">💨 Clean</div>
+        <div class="stat-track"><div class="stat-fill clean" id="s-clean" style="width:70%"></div></div>
+      </div>
+    </div>
+
+    <!-- Care buttons -->
+    <div class="masya-actions">
+      <button class="masya-btn btn-feed" id="btn-feed">🌿 Feed (Versele-Laga)</button>
+      <button class="masya-btn btn-bath" id="btn-bath">💨 Dust Bath</button>
+    </div>
+
+    <!-- Daily prompt -->
+    <div class="prompt-card">
+      <div class="prompt-eyebrow">Today's Memory Prompt</div>
+      <p class="prompt-text" id="prompt-text">What made you smile today?</p>
+      <button class="prompt-btn" id="btn-prompt-add">✦ Record this memory</button>
+    </div>
+
+    <!-- Recent memories -->
+    <div class="section-label">✦ Recent Memories</div>
+    <div id="recent-memories">
+      <div class="empty-state">
+        <div class="empty-icon">🌟</div>
+        <p>No memories yet — add your first one!</p>
+      </div>
+    </div>
+
+  </section>
   <section id="page-add"      class="page">Add Memory</section>
   <section id="page-search"   class="page">Search</section>
   <section id="page-timeline" class="page">Timeline</section>
