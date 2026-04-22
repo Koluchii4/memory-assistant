@@ -195,14 +195,238 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-      document.getElementById('page-' + btn.dataset.page).classList.add('active');
-      btn.classList.add('active');
-    });
+// ── STATE ────────────────────────────────────────────
+const APP = {
+  memories: [],
+  credits:  0,
+  pet:      { mood: 80, hunger: 60, clean: 70 },
+  tags:     [],
+  mood:     null
+};
+
+function loadState() {
+  try {
+    APP.memories = JSON.parse(localStorage.getItem('m-memories') || '[]');
+    APP.credits  = parseInt(localStorage.getItem('m-credits')   || '0');
+    APP.pet      = JSON.parse(localStorage.getItem('m-pet')     || JSON.stringify(APP.pet));
+  } catch(e) {}
+}
+
+function saveState() {
+  localStorage.setItem('m-memories', JSON.stringify(APP.memories));
+  localStorage.setItem('m-credits',  APP.credits);
+  localStorage.setItem('m-pet',      JSON.stringify(APP.pet));
+}
+
+// ── NAVIGATION ───────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${name}"]`).classList.add('active');
+  if (name === 'home') renderRecent();
+}
+
+document.querySelectorAll('.nav-item').forEach(btn =>
+  btn.addEventListener('click', () => showPage(btn.dataset.page))
+);
+
+document.getElementById('btn-prompt-add')
+  .addEventListener('click', () => showPage('add'));
+
+// ── MASYA RUNNING ANIMATION ──────────────────────────
+const masyaEl = document.getElementById('masya');
+const stageEl = document.getElementById('masya-stage');
+let mX = 20, mSpeed = 0.9, mFaceRight = true, mState = 'run';
+
+function moveMasya() {
+  setInterval(() => {
+    if (mState === 'dance') return;
+    const maxX = stageEl.offsetWidth - 84;
+    mX += mSpeed;
+    if (mX >= maxX) { mX = maxX; mSpeed = -Math.abs(mSpeed); mFaceRight = false; }
+    if (mX <= 0)    { mX = 0;    mSpeed =  Math.abs(mSpeed); mFaceRight = true;  }
+    masyaEl.style.left      = mX + 'px';
+    masyaEl.style.transform = mFaceRight ? 'scaleX(1)' : 'scaleX(-1)';
+  }, 25);
+}
+
+masyaEl.addEventListener('click', () => {
+  // escape — reverse direction, speed burst
+  mSpeed    = mFaceRight ? -3.5 : 3.5;
+  mFaceRight = !mFaceRight;
+  setTimeout(() => { mSpeed = mFaceRight ? 0.9 : -0.9; }, 2000);
+});
+
+function danceMasya() {
+  mState = 'dance';
+  masyaEl.classList.add('dancing');
+  setTimeout(() => { mState = 'run'; masyaEl.classList.remove('dancing'); }, 4000);
+}
+
+// ── TOAST ────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3400);
+}
+
+// ── CREDITS / STATS DISPLAY ──────────────────────────
+function updateHUD() {
+  document.getElementById('credits-display').textContent = APP.credits;
+  document.getElementById('s-mood').style.width   = APP.pet.mood    + '%';
+  document.getElementById('s-hunger').style.width = APP.pet.hunger  + '%';
+  document.getElementById('s-clean').style.width  = APP.pet.clean   + '%';
+}
+
+// ── CARE BUTTONS ─────────────────────────────────────
+document.getElementById('btn-feed').addEventListener('click', () => {
+  APP.pet.hunger = Math.min(100, APP.pet.hunger + 25);
+  APP.pet.mood   = Math.min(100, APP.pet.mood   + 10);
+  saveState(); updateHUD();
+  toast('Masya munches Versele-Laga Complete! 🌿');
+});
+
+document.getElementById('btn-bath').addEventListener('click', () => {
+  APP.pet.clean = Math.min(100, APP.pet.clean + 30);
+  APP.pet.mood  = Math.min(100, APP.pet.mood  + 15);
+  saveState(); updateHUD();
+  toast('Masya rolls in volcanic dust! 💨 So fluffy~');
+});
+
+// ── MOOD SELECTION ───────────────────────────────────
+document.querySelectorAll('.mood-btn').forEach(btn =>
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    APP.mood = btn.dataset.mood;
+  })
+);
+
+// ── TAGS ─────────────────────────────────────────────
+function addTag(text) {
+  if (!text || APP.tags.includes(text)) return;
+  APP.tags.push(text);
+  const chip = document.createElement('span');
+  chip.className = 'tag-chip';
+  chip.innerHTML = `#${text} <button aria-label="remove">×</button>`;
+  chip.querySelector('button').addEventListener('click', () => {
+    APP.tags = APP.tags.filter(t => t !== text);
+    chip.remove();
   });
+  document.getElementById('tags-wrap').insertBefore(chip, document.getElementById('tag-input'));
+}
+
+document.getElementById('tag-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    addTag(e.target.value.trim().replace(',', ''));
+    e.target.value = '';
+  }
+});
+
+// ── YOUTUBE EMBED ────────────────────────────────────
+function ytId(url) {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?#\n]+)/);
+  return m ? m[1] : null;
+}
+
+document.getElementById('yt-link').addEventListener('input', function () {
+  const id = ytId(this.value);
+  document.getElementById('yt-preview').innerHTML = id
+    ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe></div>`
+    : '';
+});
+
+// ── SAVE MEMORY ──────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('btn-save').addEventListener('click', () => {
+  const text = document.getElementById('mem-text').value.trim();
+  if (!text) { toast('Write something first ✍️'); return; }
+
+  APP.memories.unshift({
+    id:   Date.now(),
+    date: new Date().toISOString(),
+    mood: APP.mood || '😊',
+    text,
+    tags: [...APP.tags],
+    yt:   document.getElementById('yt-link').value.trim()
+  });
+  APP.credits          += 10;
+  APP.pet.mood          = Math.min(100, APP.pet.mood + 20);
+  saveState(); updateHUD();
+
+  // reset form
+  document.getElementById('mem-text').value = '';
+  document.getElementById('yt-link').value  = '';
+  document.getElementById('yt-preview').innerHTML = '';
+  APP.tags = []; APP.mood = null;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#tags-wrap .tag-chip').forEach(c => c.remove());
+
+  danceMasya();
+  toast('Memory saved! +10 ⭐ Masya is dancing with joy!');
+  setTimeout(() => showPage('home'), 500);
+});
+
+// ── RENDER RECENT MEMORIES ───────────────────────────
+function memCard(m) {
+  const date = new Date(m.date).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+  const tags  = m.tags.map(t => `<span class="tag">#${escHtml(t)}</span>`).join('');
+  return `<div class="memory-card">
+    <div class="mem-mood">${m.mood}</div>
+    <div class="mem-text">${escHtml(m.text)}</div>
+    ${tags ? `<div class="mem-tags">${tags}</div>` : ''}
+    <div class="mem-footer">
+      <span class="mem-date">${date}</span>
+      ${m.yt ? '<span class="mem-yt">🎵</span>' : ''}
+    </div>
+  </div>`;
+}
+
+function renderRecent() {
+  const el = document.getElementById('recent-memories');
+  el.innerHTML = APP.memories.length
+    ? APP.memories.slice(0, 5).map(memCard).join('')
+    : `<div class="empty-state"><div class="empty-icon">🌟</div><p>No memories yet — add your first one!</p></div>`;
+}
+
+// ── DAILY PROMPT ─────────────────────────────────────
+const PROMPTS = [
+  'What made you smile today?',
+  'Describe a moment that surprised you.',
+  'What are you grateful for right now?',
+  'Who made your day better, and how?',
+  'What did you learn today?',
+  'What small thing made a big difference?',
+  'Describe where you are using all 5 senses.',
+  'What would you tell your younger self?',
+  'Write about something beautiful you noticed.',
+  'If today were a colour, what would it be and why?',
+  'What challenged you today?',
+  'What do you want to remember in 10 years?',
+  'What made you feel connected to someone?',
+  'Describe your perfect moment of the day.',
+  'What song is stuck in your head and why?'
+];
+
+document.getElementById('prompt-text').textContent =
+  PROMPTS[new Date().getDate() % PROMPTS.length];
+
+// ── INIT ─────────────────────────────────────────────
+loadState();
+updateHUD();
+renderRecent();
+moveMasya();
+
+if (!localStorage.getItem('m-welcomed')) {
+  localStorage.setItem('m-welcomed', '1');
+  setTimeout(() => toast('Welcome to Masya! 🐭✨ Your magical memory diary.'), 1200);
+}
 </script>
 
 </body>
