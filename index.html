@@ -1,1 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masya — Memory Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --sky:#87CEEB;--green:#2ecc71;--red:#e74c3c;--black:#0a0e1a;
+  --glass:rgba(255,255,255,0.08);--glass-border:rgba(255,255,255,0.15);
+  --text:#eaf0ff;--muted:rgba(234,240,255,0.55);--gold:#f0c040;
+}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--text);min-height:100vh;overflow-x:hidden;position:relative}
+canvas#neural{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.35}
+#app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding-bottom:80px}
 
+/* MASYA */
+#masya{position:fixed;z-index:999;cursor:pointer;transition:none;user-select:none;width:64px;height:64px}
+#masya svg{width:64px;height:64px;filter:drop-shadow(0 0 8px rgba(135,206,235,0.6))}
+#masya:hover svg{filter:drop-shadow(0 0 14px rgba(135,206,235,0.9))}
+
+/* GLASS CARD */
+.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:20px;margin-bottom:14px;transition:all .3s}
+.card:hover{background:rgba(255,255,255,0.11);border-color:rgba(135,206,235,0.3)}
+
+/* NAV */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;background:rgba(10,14,26,0.92);border-top:1px solid var(--glass-border);backdrop-filter:blur(24px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 0 8px;background:none;border:none;color:rgba(234,240,255,0.4);cursor:pointer;font-family:'Inter',sans-serif;font-size:10px;font-weight:500;transition:color .2s;letter-spacing:.3px}
+.nav-btn.active{color:var(--sky)}
+.nav-icon{font-size:20px;line-height:1}
+
+/* SCREENS */
+.screen{display:none;padding:20px 16px 10px;animation:fadeIn .35s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* HEADER */
+.screen-title{font-family:'Playfair Display',Georgia,serif;font-size:1.7rem;font-weight:700;margin-bottom:6px;line-height:1.2}
+.screen-sub{color:var(--muted);font-size:.84rem;margin-bottom:20px}
+
+/* BUTTONS */
+.btn-primary{background:linear-gradient(135deg,var(--sky),#5bb8e8);color:#0a0e1a;border:none;border-radius:14px;padding:13px 24px;font-size:.9rem;font-weight:600;cursor:pointer;width:100%;font-family:'Inter',sans-serif;transition:all .25s;letter-spacing:.3px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(135,206,235,0.35)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:14px;padding:11px 20px;font-size:.86rem;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s}
+.btn-ghost:hover{background:rgba(255,255,255,0.1)}
+.btn-red{background:linear-gradient(135deg,var(--red),#c0392b);color:#fff;border:none;border-radius:14px;padding:15px;font-size:.95rem;font-weight:700;cursor:pointer;width:100%;font-family:'Inter',sans-serif;transition:all .25s}
+.btn-red:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(231,76,60,.4)}
+
+/* FIELDS */
+.field{background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);border-radius:14px;color:var(--text);padding:12px 16px;font-size:.9rem;width:100%;font-family:'Inter',sans-serif;transition:border .2s}
+.field:focus{outline:none;border-color:rgba(135,206,235,.5)}
+.field::placeholder{color:rgba(234,240,255,.25)}
+textarea.field{resize:none;line-height:1.65}
+
+/* MOOD */
+.mood-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.mood-btn{background:rgba(255,255,255,.05);border:2px solid transparent;border-radius:12px;padding:7px;font-size:1.3rem;cursor:pointer;transition:all .2s;line-height:1}
+.mood-btn:hover{background:rgba(255,255,255,.1)}
+.mood-btn.on{border-color:var(--sky);background:rgba(135,206,235,.15);transform:scale(1.1)}
+
+/* TAGS */
+.tag-row{display:flex;gap:7px;flex-wrap:wrap}
+.tag{background:rgba(135,206,235,.08);border:1px solid rgba(135,206,235,.2);border-radius:20px;padding:5px 13px;font-size:.76rem;cursor:pointer;color:var(--sky);transition:all .2s;font-family:'Inter',sans-serif}
+.tag:hover,.tag.on{background:rgba(135,206,235,.22);border-color:rgba(135,206,235,.5)}
+
+/* MEMORY CARD */
+.mem-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;margin-bottom:10px;transition:all .3s}
+.mem-card:hover{background:rgba(255,255,255,.08)}
+.mem-date{font-size:.72rem;color:var(--muted);margin-bottom:7px}
+.mem-text{font-size:.88rem;line-height:1.65;color:var(--text)}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stat-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;text-align:center}
+.stat-val{font-size:1.4rem;font-weight:700;margin-bottom:3px}
+.stat-lbl{font-size:.7rem;color:var(--muted)}
+
+/* GAME */
+.game-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:260px;margin:0 auto 20px}
+.game-pad{border:none;border-radius:16px;aspect-ratio:1;cursor:pointer;transition:all .15s;font-size:.8rem;font-weight:700;color:#fff;font-family:'Inter',sans-serif}
+
+/* MASYA CARE */
+.care-bar{background:rgba(255,255,255,.08);border-radius:20px;height:10px;overflow:hidden;margin-top:6px}
+.care-fill{height:100%;border-radius:20px;transition:width .5s ease}
+
+/* BADGE */
+.badge-gold{background:rgba(240,192,64,.15);border:1px solid rgba(240,192,64,.3);border-radius:20px;padding:4px 12px;font-size:.76rem;color:var(--gold);font-weight:600;display:inline-block}
+.badge-green{background:rgba(46,204,113,.12);border:1px solid rgba(46,204,113,.25);border-radius:20px;padding:4px 12px;font-size:.76rem;color:var(--green);display:inline-block}
+
+/* SOS */
+.sos-btn{background:linear-gradient(135deg,#e74c3c,#c0392b);border:none;border-radius:18px;padding:18px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;width:100%;font-family:'Inter',sans-serif;letter-spacing:.5px;transition:all .3s;box-shadow:0 0 0 0 rgba(231,76,60,.4)}
+.sos-btn:hover{box-shadow:0 0 0 12px rgba(231,76,60,.15);transform:scale(1.02)}
+.sos-btn.sent{background:linear-gradient(135deg,#27ae60,#2ecc71);box-shadow:none}
+
+/* SPINNER */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+
+/* SEARCH RESULT */
+.ai-result{background:rgba(135,206,235,.06);border:1px solid rgba(135,206,235,.2);border-radius:16px;padding:18px;font-size:.9rem;line-height:1.75;white-space:pre-wrap}
+
+/* SECTION LABEL */
+.section-label{font-size:.7rem;font-weight:600;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+
+/* TIMELINE */
+.month-label{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--sky);margin:20px 0 10px}
+
+/* FAMILY */
+.person-card{display:flex;align-items:center;gap:14px;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:14px;margin-bottom:10px}
+.person-avatar{width:48px;height:48px;border-radius:50%;background:rgba(135,206,235,.15);border:1px solid rgba(135,206,235,.25);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- Neural background -->
+<canvas id="neural"></canvas>
+
+<!-- Masya the Chinchilla -->
+<div id="masya" title="Click me!">
+<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Body -->
+  <ellipse cx="40" cy="52" rx="22" ry="20" fill="#f5f5f5"/>
+  <!-- Grey spots -->
+  <ellipse cx="32" cy="55" rx="6" ry="5" fill="#d0d0d0" opacity=".6"/>
+  <ellipse cx="50" cy="58" rx="5" ry="4" fill="#d0d0d0" opacity=".5"/>
+  <!-- Tail -->
+  <ellipse cx="62" cy="60" rx="9" ry="5" fill="#b0b0b0" transform="rotate(-20,62,60)"/>
+  <!-- Head -->
+  <ellipse cx="40" cy="30" rx="18" ry="16" fill="#f5f5f5"/>
+  <!-- Ears -->
+  <ellipse cx="26" cy="16" rx="7" ry="10" fill="#c8c8c8"/>
+  <ellipse cx="26" cy="16" rx="4" ry="7" fill="#ffb6c1" opacity=".7"/>
+  <ellipse cx="54" cy="16" rx="7" ry="10" fill="#c8c8c8"/>
+  <ellipse cx="54" cy="16" rx="4" ry="7" fill="#ffb6c1" opacity=".7"/>
+  <!-- Eyes -->
+  <circle cx="33" cy="28" r="5" fill="#87CEEB"/>
+  <circle cx="47" cy="28" r="5" fill="#87CEEB"/>
+  <circle cx="33" cy="28" r="3" fill="#1a4a6b"/>
+  <circle cx="47" cy="28" r="3" fill="#1a4a6b"/>
+  <circle cx="34" cy="27" r="1.2" fill="white"/>
+  <circle cx="48" cy="27" r="1.2" fill="white"/>
+  <!-- Nose -->
+  <ellipse cx="40" cy="34" rx="3" ry="2" fill="#ffb6c1"/>
+  <!-- Whiskers -->
+  <line x1="40" y1="35" x2="20" y2="32" stroke="#aaa" stroke-width="0.8" opacity=".8"/>
+  <line x1="40" y1="36" x2="20" y2="37" stroke="#aaa" stroke-width="0.8" opacity=".8"/>
+  <line x1="40" y1="35" x2="60" y2="32" stroke="#aaa" stroke-width="0.8" opacity=".8"/>
+  <line x1="40" y1="36" x2="60" y2="37" stroke="#aaa" stroke-width="0.8" opacity=".8"/>
+  <!-- Mouth -->
+  <path d="M37 37 Q40 40 43 37" stroke="#aaa" stroke-width="1" fill="none"/>
+</svg>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div style="padding-top:16px;display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px">
+    <div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px" id="home-date"></div>
+      <h1 class="screen-title" id="home-greeting">Good evening 👋</h1>
+    </div>
+    <div style="text-align:right">
+      <span class="badge-gold" id="credits-badge">⭐ 0 cr.</span>
+      <div style="margin-top:6px" id="streak-badge"></div>
+    </div>
+  </div>
+
+  <!-- Daily prompt card -->
+  <div class="card" style="background:linear-gradient(135deg,rgba(135,206,235,.1),rgba(46,204,113,.06));border-color:rgba(135,206,235,.2);margin-bottom:18px">
+    <div class="section-label" style="color:var(--sky)">✨ Today's moment</div>
+    <p id="home-prompt" style="font-family:'Playfair Display',serif;font-size:.98rem;line-height:1.65;margin-bottom:14px">What special happened today? Write it down — in 10 years you'll be grateful.</p>
+    <button class="btn-primary" onclick="goTo('add')" style="width:auto;padding:10px 22px;font-size:.85rem">+ Write a memory</button>
+  </div>
+
+  <!-- Masya care -->
+  <div class="card" style="border-color:rgba(240,192,64,.2)" id="masya-card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span style="font-size:1.6rem">🐭</span>
+      <div>
+        <div style="font-weight:600;font-size:.92rem">Masya needs attention!</div>
+        <div style="font-size:.76rem;color:var(--muted)" id="masya-status">She's waiting for food...</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">🌾 Food</div>
+        <div class="care-bar"><div class="care-fill" id="food-bar" style="width:60%;background:linear-gradient(90deg,#f0c040,#f39c12)"></div></div>
+      </div>
+      <div>
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">🌋 Bath</div>
+        <div class="care-bar"><div class="care-fill" id="bath-bar" style="width:80%;background:linear-gradient(90deg,var(--sky),#5bb8e8)"></div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn-ghost" onclick="feedMasya()" style="flex:1;font-size:.82rem">🌾 Feed her</button>
+      <button class="btn-ghost" onclick="bathMasya()" style="flex:1;font-size:.82rem">🌋 Give bath</button>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+    <button class="card" onclick="goTo('search')" style="text-align:left;cursor:pointer;background:rgba(135,206,235,.06)">
+      <div style="font-size:1.4rem;margin-bottom:7px">🔍</div>
+      <div style="font-weight:600;font-size:.88rem;margin-bottom:3px">AI Search</div>
+      <div style="font-size:.73rem;color:var(--muted)">Find any memory</div>
+    </button>
+    <button class="card" onclick="goTo('timeline')" style="text-align:left;cursor:pointer;background:rgba(240,192,64,.05)">
+      <div style="font-size:1.4rem;margin-bottom:7px">📅</div>
+      <div style="font-weight:600;font-size:.88rem;margin-bottom:3px">Timeline</div>
+      <div style="font-size:.73rem;color:var(--muted)" id="home-count">0 memories</div>
+    </button>
+  </div>
+
+  <!-- Recent memories -->
+  <div id="home-recent"></div>
+</div>
+
+<!-- ADD MEMORY -->
+<div id="screen-add" class="screen">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-top:16px">
+    <button class="btn-ghost" onclick="goTo('home')" style="padding:8px 14px;flex-shrink:0">←</button>
+    <h2 class="screen-title" style="margin:0">New memory</h2>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <div>
+      <div class="section-label">How do you feel?</div>
+      <div class="mood-row" id="mood-row"></div>
+    </div>
+    <div>
+      <div class="section-label">What happened today?</div>
+      <textarea class="field" id="mem-text" rows="6" placeholder="Describe the day, thoughts, dreams, ideas... Everything you want to remember."></textarea>
+      <div style="text-align:right;font-size:.72rem;color:var(--muted);margin-top:4px" id="char-count">0 chars</div>
+    </div>
+    <div>
+      <div class="section-label">Tags</div>
+      <div class="tag-row" id="tag-row"></div>
+    </div>
+    <div>
+      <div class="section-label">🔗 Link (YouTube, article…)</div>
+      <input class="field" type="url" id="mem-link" placeholder="https://youtube.com/watch?v=…">
+    </div>
+    <div class="card" style="background:rgba(240,192,64,.07);border-color:rgba(240,192,64,.2);display:flex;align-items:center;gap:12px">
+      <span style="font-size:1.3rem">⭐</span>
+      <div>
+        <div style="font-size:.84rem;font-weight:600;color:var(--gold)">+10 credits for this entry</div>
+        <div style="font-size:.74rem;color:var(--muted)">Earn credits — unlock AI features</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveMemory()" id="save-btn">💾 Save memory</button>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div id="screen-search" class="screen">
+  <div style="padding-top:16px">
+    <h2 class="screen-title">🔍 AI Search</h2>
+    <p class="screen-sub">Ask in plain language — AI finds the answer in your memories.</p>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <input class="field" id="search-q" placeholder="What were my dreams last summer?" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="btn-primary" onclick="doSearch()" id="search-btn" style="width:auto;padding:0 18px;flex-shrink:0">→</button>
+    </div>
+    <div class="tag-row" style="margin-bottom:20px">
+      <span class="tag" onclick="document.getElementById('search-q').value=this.innerText">My dreams</span>
+      <span class="tag" onclick="document.getElementById('search-q').value=this.innerText">What was important?</span>
+      <span class="tag" onclick="document.getElementById('search-q').value=this.innerText">My ideas</span>
+      <span class="tag" onclick="document.getElementById('search-q').value=this.innerText">A year ago</span>
+    </div>
+    <div id="search-result"></div>
+    <div id="search-empty" style="text-align:center;padding:44px 20px;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:12px">🧠</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--text);margin-bottom:8px">AI Memory Search</div>
+      <div style="font-size:.84rem;line-height:1.65">Ask a question about your life — the assistant will find the answer in your entries.</div>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<div id="screen-timeline" class="screen">
+  <div style="padding-top:16px">
+    <h2 class="screen-title">📅 Timeline</h2>
+    <p class="screen-sub" id="timeline-sub">Your life story</p>
+    <div id="timeline-content"></div>
+  </div>
+</div>
+
+<!-- GAMES -->
+<div id="screen-games" class="screen">
+  <div id="games-hub">
+    <div style="padding-top:16px">
+      <h2 class="screen-title">🧠 Brain Training</h2>
+      <p class="screen-sub">Daily cognitive exercises keep your memory sharp</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="card" onclick="startGame('simon')" style="text-align:left;cursor:pointer;background:rgba(231,76,60,.07);border-color:rgba(231,76,60,.2)">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="font-size:2rem">🎯</span>
+            <div>
+              <div style="font-weight:600;margin-bottom:4px">Color Sequence</div>
+              <div style="font-size:.78rem;color:var(--muted)">Remember and repeat the pattern</div>
+              <span class="badge-gold" style="margin-top:6px;display:inline-block">+5 cr. per round</span>
+            </div>
+          </div>
+        </button>
+        <button class="card" onclick="startGame('stroop')" style="text-align:left;cursor:pointer;background:rgba(135,206,235,.07);border-color:rgba(135,206,235,.2)">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="font-size:2rem">🎨</span>
+            <div>
+              <div style="font-weight:600;margin-bottom:4px">Stroop Effect</div>
+              <div style="font-size:.78rem;color:var(--muted)">Name the color, ignore the word</div>
+              <span class="badge-gold" style="margin-top:6px;display:inline-block">+3 cr. per answer</span>
+            </div>
+          </div>
+        </button>
+        <button class="card" onclick="startGame('words')" style="text-align:left;cursor:pointer;background:rgba(46,204,113,.07);border-color:rgba(46,204,113,.2)">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="font-size:2rem">📝</span>
+            <div>
+              <div style="font-weight:600;margin-bottom:4px">Word Sprint</div>
+              <div style="font-size:.78rem;color:var(--muted)">Name as many words as you can in 30 sec</div>
+              <span class="badge-gold" style="margin-top:6px;display:inline-block">+2 cr. per word</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="game-area" style="display:none;padding-top:16px"></div>
+</div>
+
+<!-- FAMILY -->
+<div id="screen-family" class="screen">
+  <div style="padding-top:16px">
+    <h2 class="screen-title">👨‍👩‍👧 Family</h2>
+    <p class="screen-sub">People who matter to you</p>
+    <button class="sos-btn" id="sos-btn" onclick="sendSOS()">🆘 SOS — Send my location to family</button>
+    <div style="margin-top:20px" id="family-list"></div>
+    <div id="add-person-form" style="display:none;margin-top:14px" class="card">
+      <div style="font-weight:600;margin-bottom:14px">Add person</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px" id="avatar-row">
+        👩 👨 👧 👦 👴 👵 🧑 👶
+      </div>
+      <input class="field" id="person-name" placeholder="Name" style="margin-bottom:10px">
+      <input class="field" id="person-role" placeholder="Relation (mom, son...)" style="margin-bottom:14px">
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" onclick="document.getElementById('add-person-form').style.display='none'" style="flex:1">Cancel</button>
+        <button class="btn-primary" onclick="savePerson()" style="flex:1">Add</button>
+      </div>
+    </div>
+    <button class="btn-ghost" onclick="document.getElementById('add-person-form').style.display='block'" style="width:100%;margin-top:12px">+ Add family member</button>
+  </div>
+</div>
+
+</div><!-- end #app -->
+
+<!-- NAV -->
+<nav>
+  <button class="nav-btn active" id="nav-home" onclick="goTo('home')"><span class="nav-icon">🏠</span>Home</button>
+  <button class="nav-btn" id="nav-timeline" onclick="goTo('timeline')"><span class="nav-icon">📅</span>Timeline</button>
+  <button class="nav-btn" id="nav-add" onclick="goTo('add')"><span class="nav-icon">✍️</span>Write</button>
+  <button class="nav-btn" id="nav-games" onclick="goTo('games')"><span class="nav-icon">🧠</span>Games</button>
+  <button class="nav-btn" id="nav-family" onclick="goTo('family')"><span class="nav-icon">👨‍👩‍👧</span>Family</button>
+</nav>
+
+<script>
+// ── NEURAL NETWORK BACKGROUND ──────────────────────────────────────────────
+const canvas = document.getElementById('neural');
+const ctx = canvas.getContext('2d');
+let W, H, nodes = [];
+function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+function makeNodes(n){
+  nodes = [];
+  for(let i=0;i<n;i++) nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4});
+}
+makeNodes(55);
+function drawNeural(){
+  ctx.clearRect(0,0,W,H);
+  nodes.forEach(n=>{ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>W)n.vx*=-1; if(n.y<0||n.y>H)n.vy*=-1; });
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<140){
+        ctx.beginPath();
+        ctx.strokeStyle=`rgba(135,206,235,${(1-d/140)*.35})`;
+        ctx.lineWidth=.7;
+        ctx.moveTo(nodes[i].x,nodes[i].y);
+        ctx.lineTo(nodes[j].x,nodes[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  nodes.forEach(n=>{
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,2.2,0,Math.PI*2);
+    ctx.fillStyle='rgba(135,206,235,0.7)';
+    ctx.fill();
+  });
+  requestAnimationFrame(drawNeural);
+}
+drawNeural();
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let memories = JSON.parse(localStorage.getItem('masya_memories')||'[]');
+let credits = +localStorage.getItem('masya_credits')||0;
+let streak = +localStorage.getItem('masya_streak')||0;
+let family = JSON.parse(localStorage.getItem('masya_family')||'[{"name":"Mom","role":"Parent","emoji":"👩"},{"name":"Dad","role":"Parent","emoji":"👨"}]');
+let masyaFood = +localStorage.getItem('masya_food')||60;
+let masyaBath = +localStorage.getItem('masya_bath')||80;
+let selectedMood = '😊';
+let selectedTags = [];
+
+function save(){
+  localStorage.setItem('masya_memories',JSON.stringify(memories));
+  localStorage.setItem('masya_credits',credits);
+  localStorage.setItem('masya_streak',streak);
+  localStorage.setItem('masya_family',JSON.stringify(family));
+  localStorage.setItem('masya_food',masyaFood);
+  localStorage.setItem('masya_bath',masyaBath);
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('nav-'+id)?.classList.add('active');
+  if(id==='home') renderHome();
+  if(id==='timeline') renderTimeline();
+  if(id==='family') renderFamily();
+  if(id==='add') initAdd();
+  if(id==='games'){ document.getElementById('games-hub').style.display='block'; document.getElementById('game-area').style.display='none'; }
+}
+
+// ── HOME ───────────────────────────────────────────────────────────────────
+const MOODS=['😊','😌','🤔','😢','😴','🎉','❤️','⚡','🌟','😂','🙏','😤'];
+const TAGS=['#dream','#family','#work','#health','#idea','#important','#travel','#ordinary day','#nature'];
+const GREETINGS=['Good morning','Good afternoon','Good evening'];
+
+function renderHome(){
+  const h=new Date().getHours();
+  document.getElementById('home-greeting').textContent=(h<12?GREETINGS[0]:h<17?GREETINGS[1]:GREETINGS[2])+' 👋';
+  document.getElementById('home-date').textContent=new Date().toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('credits-badge').textContent='⭐ '+credits+' cr.';
+  document.getElementById('streak-badge').innerHTML=streak>0?`<span class="badge-green">🔥 ${streak} days</span>`:'';
+  document.getElementById('home-count').textContent=memories.length+' memories';
+  // food/bath bars
+  document.getElementById('food-bar').style.width=masyaFood+'%';
+  document.getElementById('bath-bar').style.width=masyaBath+'%';
+  document.getElementById('masya-status').textContent=masyaFood<30?'She is very hungry! 😿':masyaFood<60?'She wants food...':'She is happy! 😊';
+  // recent
+  const rc=document.getElementById('home-recent');
+  if(memories.length===0){ rc.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted)"><div style="font-size:2.5rem;margin-bottom:10px">📖</div><div style="font-family:\'Playfair Display\',serif;color:var(--text);margin-bottom:8px">Start your story</div><div style="font-size:.84rem;line-height:1.65">Write your first memory.<br>In years to come, you\'ll be grateful.</div></div>'; return; }
+  rc.innerHTML='<div class="section-label">Recent</div>'+memories.slice(0,3).map(m=>memCard(m)).join('');
+}
+
+function memCard(m){
+  const ytId=(m.link||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  return `<div class="mem-card">
+    <div class="mem-date">${m.mood} · ${new Date(m.date).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div class="mem-text">${m.text.slice(0,160)}${m.text.length>160?'…':''}</div>
+    ${m.tags?.length?'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">'+m.tags.map(t=>`<span style="background:rgba(135,206,235,.1);border-radius:12px;padding:2px 10px;font-size:.7rem;color:var(--sky)">${t}</span>`).join('')+'</div>':''}
+    ${ytId?`<div style="margin-top:10px;border-radius:12px;overflow:hidden;aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${ytId[1]}" frameborder="0" allowfullscreen style="display:block"></iframe></div>`:''}
+  </div>`;
+}
+
+// ── ADD MEMORY ─────────────────────────────────────────────────────────────
+function initAdd(){
+  selectedMood='😊'; selectedTags=[];
+  document.getElementById('mem-text').value='';
+  document.getElementById('mem-link').value='';
+  document.getElementById('char-count').textContent='0 chars';
+  const mr=document.getElementById('mood-row');
+  mr.innerHTML=MOODS.map(e=>`<button class="mood-btn${e===selectedMood?' on':''}" onclick="selectMood('${e}')">${e}</button>`).join('');
+  const tr=document.getElementById('tag-row');
+  tr.innerHTML=TAGS.map(t=>`<span class="tag" onclick="toggleTag('${t}')">${t}</span>`).join('');
+  document.getElementById('mem-text').oninput=function(){document.getElementById('char-count').textContent=this.value.length+' chars'};
+}
+function selectMood(e){
+  selectedMood=e;
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.toggle('on',b.textContent===e));
+}
+function toggleTag(t){
+  if(selectedTags.includes(t)) selectedTags=selectedTags.filter(x=>x!==t);
+  else selectedTags.push(t);
+  document.querySelectorAll('#tag-row .tag').forEach(b=>b.classList.toggle('on',selectedTags.includes(b.textContent)));
+}
+function saveMemory(){
+  const text=document.getElementById('mem-text').value.trim();
+  if(!text) return;
+  const mem={id:Date.now(),text,mood:selectedMood,tags:[...selectedTags],link:document.getElementById('mem-link').value.trim(),date:new Date().toISOString()};
+  memories.unshift(mem);
+  credits+=10; streak++;
+  save();
+  // Masya dances
+  masyaHappy();
+  document.getElementById('mem-text').value='';
+  goTo('home');
+}
+
+// ── SEARCH ─────────────────────────────────────────────────────────────────
+async function doSearch(){
+  const q=document.getElementById('search-q').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('search-btn');
+  btn.textContent='⟳'; btn.disabled=true;
+  document.getElementById('search-empty').style.display='none';
+  document.getElementById('search-result').innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)"><div style="font-size:1.8rem;margin-bottom:10px;animation:pulse 1.5s infinite">🔮</div>Searching memories…</div>';
+  try{
+    const ctx=memories.length
+      ?memories.map(m=>`[${new Date(m.date).toLocaleDateString('en')}] ${m.mood} ${m.text}${m.tags?.length?' '+m.tags.join(' '):''}${m.link?' 🔗'+m.link:''}`).join('\n')
+      :'No memories yet.';
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:`You are Masya, a warm and caring Memory Assistant — a little white chinchilla who knows all the user's memories. Here are all their entries:\n\n${ctx}\n\nReply in English, warmly and concisely. Help find relevant memories. If there are no entries yet — gently suggest starting a diary.`,messages:[{role:'user',content:q}]})});
+    const data=await res.json();
+    const answer=data.content?.map(b=>b.text||'').join('')||'Could not get an answer.';
+    document.getElementById('search-result').innerHTML=`<div class="section-label" style="color:var(--sky)">💬 Masya's answer</div><div class="ai-result">${answer}</div>`;
+  }catch(e){
+    document.getElementById('search-result').innerHTML='<div class="ai-result" style="color:var(--red)">Network error. Check your connection.</div>';
+  }
+  btn.textContent='→'; btn.disabled=false;
+}
+
+// ── TIMELINE ───────────────────────────────────────────────────────────────
+function renderTimeline(){
+  document.getElementById('timeline-sub').textContent=memories.length+' memories saved';
+  const el=document.getElementById('timeline-content');
+  if(!memories.length){ el.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:2.5rem;margin-bottom:12px">📖</div>Your timeline is empty. Start writing!</div>'; return; }
+  const groups={};
+  memories.forEach(m=>{
+    const k=new Date(m.date).toLocaleDateString('en',{month:'long',year:'numeric'});
+    if(!groups[k]) groups[k]=[];
+    groups[k].push(m);
+  });
+  el.innerHTML=Object.entries(groups).map(([month,mems])=>`<div class="month-label">${month}</div><div>${mems.map(m=>memCard(m)).join('')}</div>`).join('');
+}
+
+// ── GAMES ──────────────────────────────────────────────────────────────────
+function startGame(g){
+  document.getElementById('games-hub').style.display='none';
+  const area=document.getElementById('game-area');
+  area.style.display='block';
+  if(g==='simon') simonGame(area);
+  else if(g==='stroop') stroopGame(area);
+  else wordGame(area);
+}
+function backToGames(){
+  document.getElementById('games-hub').style.display='block';
+  document.getElementById('game-area').style.display='none';
+}
+function earnCredits(n){ credits+=n; save(); }
+
+// SIMON
+function simonGame(el){
+  const COLS=['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+  const NAMES=['Red','Blue','Green','Yellow'];
+  let seq=[],pSeq=[],score=0,phase='idle',lit=-1;
+  function render(msg){
+    el.innerHTML=`<button class="btn-ghost" onclick="backToGames()" style="margin-bottom:16px">← Back</button>
+    <h2 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:6px">🎯 Color Sequence</h2>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">+5 credits per round</div>
+    <div style="font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:8px">Round: ${score}</div>
+    <div style="font-size:.84rem;color:var(--muted);margin-bottom:24px;min-height:22px">${msg}</div>
+    <div class="game-grid">
+    ${COLS.map((c,i)=>`<button class="game-pad" id="pad${i}" style="background:${c};opacity:${lit===i?1:.45};transform:${lit===i?'scale(1.08)':'scale(1)'};box-shadow:${lit===i?`0 0 24px ${c}`:none}" onclick="simPress(${i})">${NAMES[i]}</button>`).join('')}
+    </div>
+    ${phase==='idle'||phase==='lose'?`<button class="btn-primary" onclick="simStart()" style="margin-top:16px">${phase==='lose'?'🔄 Try again':'▶ Start'}</button>`:''}`;
+    window.simPress=async idx=>{
+      if(phase!=='input') return;
+      pSeq.push(idx);
+      const pos=pSeq.length-1;
+      if(pSeq[pos]!==seq[pos]){ phase='lose'; render('❌ Wrong! Try again.'); return; }
+      if(pSeq.length===seq.length){
+        score++; earnCredits(5);
+        seq.push(Math.floor(Math.random()*4)); pSeq=[];
+        await showSeq();
+      }
+    };
+    window.simStart=async()=>{ seq=[Math.floor(Math.random()*4)]; pSeq=[]; score=0; await showSeq(); };
+  }
+  async function showSeq(){
+    phase='showing'; render('👀 Watch carefully...');
+    await new Promise(r=>setTimeout(r,500));
+    for(let i=0;i<seq.length;i++){
+      lit=seq[i]; render('👀 Watch carefully...');
+      await new Promise(r=>setTimeout(r,520));
+      lit=-1; render('👀 Watch carefully...');
+      await new Promise(r=>setTimeout(r,260));
+    }
+    phase='input'; render(`🎮 Your turn! (${pSeq.length}/${seq.length})`);
+  }
+  render('Press Start');
+}
+
+// STROOP
+function stroopGame(el){
+  const ROUNDS=[{w:'RED',c:'#3498db',a:'blue'},{w:'BLUE',c:'#2ecc71',a:'green'},{w:'GREEN',c:'#e74c3c',a:'red'},{w:'YELLOW',c:'#9b59b6',a:'purple'},{w:'PURPLE',c:'#f1c40f',a:'yellow'},{w:'RED',c:'#2ecc71',a:'green'},{w:'BLUE',c:'#e74c3c',a:'red'}];
+  const OPTS=[{id:'red',l:'Red',c:'#e74c3c'},{id:'blue',l:'Blue',c:'#3498db'},{id:'green',l:'Green',c:'#2ecc71'},{id:'yellow',l:'Yellow',c:'#f1c40f'},{id:'purple',l:'Purple',c:'#9b59b6'}];
+  let round=0,score=0,done=false,fb='';
+  function render(){
+    if(!done){
+      const cur=ROUNDS[round];
+      el.innerHTML=`<button class="btn-ghost" onclick="backToGames()" style="margin-bottom:16px">← Back</button>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:6px">🎨 Stroop Effect</h2>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">${round+1}/7 · ${score} correct · +3 cr./answer</div>
+      <div style="font-family:'Playfair Display',serif;font-size:2.6rem;font-weight:700;color:${cur.c};margin-bottom:10px;letter-spacing:2px">${cur.w}</div>
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:22px">Press the TEXT COLOR</div>
+      ${fb?`<div style="font-size:1.2rem;margin-bottom:14px">${fb}</div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      ${OPTS.map(o=>`<button onclick="stroopAns('${o.id}')" style="background:${o.c};color:#fff;border:none;border-radius:12px;padding:12px 16px;font-size:.86rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">${o.l}</button>`).join('')}
+      </div>`;
+    } else {
+      el.innerHTML=`<div style="text-align:center;padding:30px 0">
+      <div style="font-size:3rem;margin-bottom:12px">🏆</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;margin-bottom:8px">Result: ${score}/7</h2>
+      <div style="color:var(--gold);margin-bottom:20px">+${score*3} credits earned!</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" onclick="backToGames()" style="flex:1">← Back</button>
+        <button class="btn-primary" onclick="stroopGame(document.getElementById('game-area'))" style="flex:1">🔄 Again</button>
+      </div></div>`;
+    }
+    window.stroopAns=id=>{
+      if(fb) return;
+      const cur=ROUNDS[round];
+      const ok=id===cur.a;
+      fb=ok?'✅ Correct!':'❌ Wrong';
+      if(ok){ score++; earnCredits(3); }
+      render();
+      setTimeout(()=>{ fb=''; round++; if(round>=ROUNDS.length) done=true; render(); },650);
+    };
+  }
+  render();
+}
+
+// WORDS
+function wordGame(el){
+  const CATS=[{n:'Animals',e:'Cat, Bear, Elephant'},{n:'Fruits',e:'Apple, Banana, Cherry'},{n:'Countries',e:'France, Japan, Brazil'},{n:'Colors',e:'Red, Blue, Green'},{n:'Sports',e:'Football, Tennis, Swimming'}];
+  const cat=CATS[Math.floor(Math.random()*CATS.length)];
+  let words=[],t=30,started=false,done=false,iv;
+  function render(){
+    if(!started){
+      el.innerHTML=`<button class="btn-ghost" onclick="backToGames()" style="margin-bottom:16px">← Back</button>
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:12px">📝 Word Sprint</h2>
+      <div class="card" style="margin-bottom:20px"><div style="color:var(--sky);font-weight:600;margin-bottom:6px">Category: ${cat.n}</div><div style="font-size:.82rem;color:var(--muted)">e.g. ${cat.e}...</div></div>
+      <p style="color:var(--muted);font-size:.86rem;margin-bottom:20px">Name as many ${cat.n.toLowerCase()} as you can in 30 seconds!</p>
+      <button class="btn-primary" onclick="wStart()">▶ Start (30 sec)</button>`;
+      window.wStart=()=>{ started=true; iv=setInterval(()=>{ t--; if(t<=0){ clearInterval(iv); done=true; earnCredits(words.length*2); save(); } render(); },1000); render(); };
+    } else if(done){
+      el.innerHTML=`<div style="text-align:center;padding:20px 0">
+      <div style="font-size:3rem;margin-bottom:12px">🎊</div>
+      <div style="font-size:2.8rem;font-weight:700;color:var(--sky)">${words.length}</div>
+      <div style="color:var(--muted);margin-bottom:6px">words named</div>
+      <div style="color:var(--gold);margin-bottom:20px">+${words.length*2} credits!</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:20px">${words.map(w=>`<span class="tag on">${w}</span>`).join('')}</div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" onclick="backToGames()" style="flex:1">← Back</button>
+        <button class="btn-primary" onclick="wordGame(document.getElementById('game-area'))" style="flex:1">🔄 Again</button>
+      </div></div>`;
+    } else {
+      el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div><h2 style="font-family:'Playfair Display',serif;font-size:1.2rem">${cat.n}</h2><div style="font-size:.75rem;color:var(--muted)">${words.length} words · +${words.length*2} cr.</div></div>
+      <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;color:${t<=10?'var(--red)':'var(--sky)'}">${t}</div></div>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <input class="field" id="word-inp" placeholder="Type a word..." onkeydown="if(event.key==='Enter')addWord()" autofocus>
+        <button class="btn-primary" onclick="addWord()" style="width:auto;padding:0 18px;flex-shrink:0">+</button>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">${words.map(w=>`<span class="tag on">${w}</span>`).join('')}</div>`;
+      window.addWord=()=>{ const inp=document.getElementById('word-inp'); const w=inp.value.trim(); if(w&&!words.includes(w)) words.push(w); inp.value=''; inp.focus(); render(); };
+      setTimeout(()=>document.getElementById('word-inp')?.focus(),50);
+    }
+  }
+  render();
+}
+
+// ── FAMILY ─────────────────────────────────────────────────────────────────
+function renderFamily(){
+  const fl=document.getElementById('family-list');
+  fl.innerHTML=family.map(p=>`<div class="person-card"><div class="person-avatar">${p.emoji}</div><div style="flex:1"><div style="font-weight:600">${p.name}</div>${p.role?`<div style="font-size:.8rem;color:var(--muted)">${p.role}</div>`:''}</div><span style="font-size:1.2rem;color:var(--sky)">📞</span></div>`).join('');
+}
+function savePerson(){
+  const name=document.getElementById('person-name').value.trim();
+  if(!name) return;
+  family.push({name,role:document.getElementById('person-role').value.trim(),emoji:'🧑'});
+  save(); renderFamily();
+  document.getElementById('add-person-form').style.display='none';
+  document.getElementById('person-name').value='';
+  document.getElementById('person-role').value='';
+}
+let sosSent=false;
+function sendSOS(){
+  const btn=document.getElementById('sos-btn');
+  if(sosSent) return;
+  navigator.geolocation?.getCurrentPosition(()=>{},()=>{});
+  btn.textContent='✅ Location sent to family!';
+  btn.classList.add('sent');
+  sosSent=true;
+  setTimeout(()=>{ btn.textContent='🆘 SOS — Send my location to family'; btn.classList.remove('sent'); sosSent=false; },4000);
+}
+
+// ── MASYA TAMAGOTCHI ───────────────────────────────────────────────────────
+function feedMasya(){
+  masyaFood=Math.min(100,masyaFood+30);
+  save(); renderHome();
+  masyaHappy();
+  showToast('🌾 Masya enjoyed her Versele-Laga food!');
+}
+function bathMasya(){
+  masyaBath=Math.min(100,masyaBath+40);
+  save(); renderHome();
+  showToast('🌋 Masya had a volcanic dust bath!');
+}
+
+// decrease over time
+setInterval(()=>{
+  masyaFood=Math.max(0,masyaFood-2);
+  masyaBath=Math.max(0,masyaBath-1);
+  save();
+}, 60000);
+
+// ── MASYA ANIMATION ────────────────────────────────────────────────────────
+const masya=document.getElementById('masya');
+let mx=100, my=200, mtvx=1.5, mtvy=1, mrunning=true;
+let masyaHappyTimer=0;
+
+function masyaStep(){
+  if(!mrunning) return;
+  mx+=mtvx; my+=mtvy;
+  const pw=window.innerWidth-70, ph=window.innerHeight-120;
+  if(mx<=0||mx>=pw){ mtvx*=-1; mx=Math.max(0,Math.min(mx,pw)); }
+  if(my<=0||my>=ph){ mtvy*=-1; my=Math.max(0,Math.min(my,ph)); }
+  masya.style.left=mx+'px'; masya.style.top=my+'px';
+  // random direction change
+  if(Math.random()<0.008){ mtvx=(Math.random()-.5)*3; mtvy=(Math.random()-.5)*3; }
+}
+setInterval(masyaStep, 40);
+
+masya.addEventListener('click',()=>{
+  // run away
+  const dx=mx>window.innerWidth/2?-4:4;
+  const dy=my>window.innerHeight/2?-4:4;
+  mtvx=dx*2; mtvy=dy*2;
+  // squeak sound
+  playSqueak();
+});
+
+function playSqueak(){
+  try{
+    const ac=new AudioContext();
+    const o=ac.createOscillator();
+    const g=ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type='sine';
+    o.frequency.setValueAtTime(1800,ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(900,ac.currentTime+0.15);
+    g.gain.setValueAtTime(0.15,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.15);
+    o.start(); o.stop(ac.currentTime+0.15);
+  }catch(e){}
+}
+
+function masyaHappy(){
+  // bounce Masya
+  masya.style.animation='bounce .4s ease 3';
+  setTimeout(()=>masya.style.animation='',1200);
+  playSqueak();
+}
+
+// 3-hour reminder
+const REMINDER_MS = 3*60*60*1000;
+function checkReminder(){
+  const last=+localStorage.getItem('masya_last_entry')||0;
+  if(Date.now()-last>REMINDER_MS){ playSqueak(); showToast('🐭 Masya is waiting! Time to write a memory ✍️'); }
+}
+setInterval(checkReminder, 60*60*1000);
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(10,14,26,.95);border:1px solid rgba(135,206,235,.3);border-radius:16px;padding:12px 20px;font-size:.86rem;color:var(--text);z-index:9999;backdrop-filter:blur(12px);white-space:nowrap;animation:fadeIn .3s ease';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+const MOODS_INIT=['😊','😌','🤔','😢','😴','🎉','❤️','⚡','🌟','😂','🙏','😤'];
+document.getElementById('mood-row').innerHTML=MOODS_INIT.map(e=>`<button class="mood-btn${e==='😊'?' on':''}" onclick="selectMood('${e}')">${e}</button>`).join('');
+document.getElementById('tag-row').innerHTML=TAGS.map(t=>`<span class="tag" onclick="toggleTag('${t}')">${t}</span>`).join('');
+document.getElementById('mem-text').oninput=function(){document.getElementById('char-count').textContent=this.value.length+' chars'};
+document.getElementById('save-btn').onclick=saveMemory;
+renderHome();
+renderFamily();
+</script>
+</body>
+</html>
